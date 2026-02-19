@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #gameCanvas {
+            border: 3px solid white;
+            background: #000;
+            display: block;
+            margin: 0 auto;
+            cursor: default;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .info {
+            color: white;
+            margin-top: 15px;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-around;
+            gap: 30px;
+        }
+
+        .stat {
+            font-weight: bold;
+        }
+
+        .controls {
+            color: white;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #ff5252;
+        }
+
+        #gameOver {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        #gameOver h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        #gameOver p {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Tetris</h1>
+        <canvas id="gameCanvas" width="400" height="500"></canvas>
+        <div class="info">
+            <div class="stat">Score: <span id="score">0</span></div>
+            <div class="stat">Level: <span id="level">1</span></div>
+            <div class="stat">Lines: <span id="lines">0</span></div>
+        </div>
+        <div class="controls">
+            <p>Arrow Keys: Move | Space: Rotate | Down: Drop</p>
+        </div>
+        <button onclick="resetGame()">New Game</button>
+    </div>
+
+    <div id="gameOver">
+        <h2 id="gameOverTitle">Game Over!</h2>
+        <p>Final Score: <span id="finalScore">0</span></p>
+        <p id="gameOverMessage"></p>
+        <button onclick="resetGame()" style="margin-top: 20px;">Play Again</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game variables
+        const ROWS = 8;
+        const COLS = 8;
+        const BUBBLE_RADIUS = 25;
+        const COLORS = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA'];
+        
+        let grid = [];
+        let selectedBubbles = [];
+        let score = 0;
+        let moves = 0;
+        let gameActive = true;
+        let animating = false;
+
+        class Bubble {
+            constructor(row, col, color) {
+                this.row = row;
+                this.col = col;
+                this.color = color;
+                this.x = col * 70 + 50;
+                this.y = row * 70 + 50;
+                this.radius = BUBBLE_RADIUS;
+                this.falling = false;
+                this.targetY = this.y;
+            }
+
+            draw() {
+                // Draw bubble
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+
+                // Draw highlight if selected
+                if (this.selected) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius - 8, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                // Draw shine
+                ctx.beginPath();
+                ctx.arc(this.x - 8, this.y - 8, 5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.fill();
+            }
+
+            update() {
+                if (this.falling) {
+                    if (this.y < this.targetY) {
+                        this.y += 3;
+                        if (this.y >= this.targetY) {
+                            this.y = this.targetY;
+                            this.falling = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        function initGame() {
+            grid = [];
+            selectedBubbles = [];
+            score = 0;
+            moves = 0;
+            gameActive = true;
+            animating = false;
+            document.getElementById('gameOver').style.display = 'none';
+            
+            // Create grid
+            for (let row = 0; row < ROWS; row++) {
+                grid[row] = [];
+                for (let col = 0; col < COLS; col++) {
+                    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                    grid[row][col] = new Bubble(row, col, color);
+                }
+            }
+            
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('moves').textContent = moves;
+        }
+
+        function getClickedBubble(x, y) {
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const bubble = grid[row][col];
+                    if (!bubble) continue;
+
+                    const dx = bubble.x - x;
+                    const dy = bubble.y - y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < bubble.radius) {
+                        return { row, col };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function isAdjacent(pos1, pos2) {
+            const rowDiff = Math.abs(pos1.row - pos2.row);
+            const colDiff = Math.abs(pos1.col - pos2.col);
+            return (rowDiff + colDiff === 1);
+        }
+
+        function toggleBubbleSelection(row, col) {
+            if (!grid[row][col]) return;
+
+            const bubble = grid[row][col];
+            const existingIndex = selectedBubbles.findIndex(
+                b => b.row === row && b.col === col
+            );
+
+            if (existingIndex !== -1) {
+                // Deselect
+                selectedBubbles[existingIndex].selected = false;
+                selectedBubbles.splice(existingIndex, 1);
+            } else {
+                // Check if adjacent to last selected
+                if (selectedBubbles.length === 0 || 
+                    (isAdjacent({ row, col }, selectedBubbles[selectedBubbles.length - 1]) &&
+                     grid[row][col].color === selectedBubbles[0].color)) {
+                    bubble.selected = true;
+                    selectedBubbles.push(bubble);
+                }
+            }
+        }
+
+        function popSelectedBubbles() {
+            if (selectedBubbles.length < 2) {
+                selectedBubbles.forEach(b => b.selected = false);
+                selectedBubbles = [];
+                return;
+            }
+
+            const pointsPerBubble = 10 + selectedBubbles.length * 5;
+            score += selectedBubbles.length * pointsPerBubble;
+            moves++;
+
+            selectedBubbles.forEach(bubble => {
+                grid[bubble.row][bubble.col] = null;
+            });
+
+            selectedBubbles = [];
+            updateUI();
+            
+            // Apply gravity
+            setTimeout(applyGravity, 200);
+        }
+
+        function applyGravity() {
+            animating = true;
+            let bubblesFalling = false;
+
+            for (let col = 0; col < COLS; col++) {
+                for (let row = ROWS - 1; row >= 0; row--) {
+                    if (!grid[row][col]) {
+                        // Find next bubble above
+                        for (let aboveRow = row - 1; aboveRow >= 0; aboveRow--) {
+                            if (grid[aboveRow][col]) {
+                                const bubble = grid[aboveRow][col];
+                                grid[row][col] = bubble;
+                                grid[aboveRow][col] = null;
+                                
+                                bubble.row = row;
+                                bubble.falling = true;
+                                bubble.targetY = row * 70 + 50;
+                                bubblesFalling = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (bubblesFalling) {
+                setTimeout(applyGravity, 150);
+            } else {
+                animating = false;
+                checkGameOver();
+            }
+        }
+
+        function checkGameOver() {
+            let hasMove = false;
+
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (!grid[row][col]) continue;
+
+                    const color = grid[row][col].color;
+
+                    // Check right
+                    if (col + 1 < COLS && grid[row][col + 1] && grid[row][col + 1].color === color) {
+                        hasMove = true;
+                    }
+                    // Check down
+                    if (row + 1 < ROWS && grid[row + 1][col] && grid[row + 1][col].color === color) {
+                        hasMove = true;
+                    }
+                }
+            }
+
+            if (!hasMove) {
+                gameActive = false;
+                showGameOver();
+            }
+        }
+
+        function showGameOver() {
+            document.getElementById('gameOverTitle').textContent = 'Game Over!';
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOverMessage').textContent = `You cleared the board with ${moves} moves!`;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+
+        function resetGame() {
+            level = 1;
+            initGame();
+        }
+
+        // Mouse events
+        canvas.addEventListener('click', (e) => {
+            if (!gameActive || animating) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const clicked = getClickedBubble(x, y);
+            if (clicked) {
+                toggleBubbleSelection(clicked.row, clicked.col);
+            }
+        });
+
+        // Keyboard event for Enter to pop
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && gameActive && !animating) {
+                popSelectedBubbles();
+            }
+        });
+
+        // Game loop
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw bubbles
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const bubble = grid[row][col];
+                    if (bubble) {
+                        bubble.update();
+                        bubble.draw();
+                    }
+                }
+            }
+
+            // Draw instruction
+            if (selectedBubbles.length > 0) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(
+                    `${selectedBubbles.length} bubbles selected - Press ENTER to pop or click another`,
+                    canvas.width / 2,
+                    canvas.height - 10
+                );
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start game
+        initGame();
+        gameLoop();
+    </script>
+</body>
+</html>

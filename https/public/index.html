@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tetris Game</title>
+    <title>EpiCare - Epilepsy Support Chatbot</title>
     <style>
         * {
             margin: 0;
@@ -12,409 +12,464 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #030303 0%, #4f3f5f 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
         }
 
         .container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-        }
-
-        h1 {
-            color: white;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        #gameCanvas {
-            border: 3px solid white;
-            background: #000;
-            display: block;
-            margin: 0 auto;
-            cursor: default;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .info {
-            color: white;
-            margin-top: 15px;
-            font-size: 18px;
+            width: 100%;
+            max-width: 600px;
+            background: rgb(80, 80, 80);
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             display: flex;
-            justify-content: space-around;
-            gap: 30px;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
         }
 
-        .stat {
-            font-weight: bold;
-        }
-
-        .controls {
+        .header {
+            background: linear-gradient(135deg,  #030303 0%, #4f3f5f  100%);
             color: white;
-            margin-top: 15px;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
             font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #464646;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .message.user .message-bubble {
+            background: #667eea;
+            color: #333;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot .message-bubble {
+            background: #333;
+            color:  #e8e8e8;
+            border-bottom-left-radius: 4px;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #ddd;
+            background: #333;
+            border-radius: 0 0 15px 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            padding: 12px 20px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
         button {
-            margin-top: 15px;
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #ff6b6b;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: transform 0.2s;
+            font-weight: bold;
         }
 
         button:hover {
-            background-color: #ff5252;
+            transform: scale(1.05);
         }
 
-        #gameOver {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            padding: 40px;
-            border-radius: 10px;
-            text-align: center;
-            z-index: 1000;
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .quick-prompts {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .quick-prompt {
+            color: white;
+            background: #333;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .quick-prompt:hover {
+            background: #667eea;
             color: white;
         }
 
-        #gameOver h2 {
-            font-size: 36px;
-            margin-bottom: 20px;
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
         }
 
-        #gameOver p {
-            font-size: 18px;
-            margin: 10px 0;
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: bounce 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                opacity: 0.5;
+                transform: translateY(0);
+            }
+            40% {
+                opacity: 1;
+                transform: translateY(-10px);
+            }
+        }
+
+        .disclaimer {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            padding: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .modal-content label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .modal-content button {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .close-modal {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: #333;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎮 Tetris</h1>
-        <canvas id="gameCanvas" width="400" height="500"></canvas>
-        <div class="info">
-            <div class="stat">Score: <span id="score">0</span></div>
-            <div class="stat">Level: <span id="level">1</span></div>
-            <div class="stat">Lines: <span id="lines">0</span></div>
+        <div class="header">
+            <h1>🧠 CalmMind</h1>
+            <p>Your Supportive Companion for Epilepsy Stress Management</p>
         </div>
-        <div class="controls">
-            <p>Arrow Keys: Move | Space: Rotate | Down: Drop</p>
+
+        <div class="chat-area" id="chatArea">
+            <div class="message bot">
+                <div class="message-bubble">
+                    Hello! I'm CalmMind, your supportive companion powered by AI. 💙 I'm here to help you manage stress related to epilepsy. Whether you're dealing with seizure anxiety, daily challenges, or just need someone to talk to, I'm here for you. What's on your mind today?
+                </div>
+            </div>
         </div>
-        <button onclick="resetGame()">New Game</button>
+
+            
+        <div style="padding: 15px 20px; background: #464646;">
+            <div class="quick-prompts" id="quickPrompts">
+                <button class="quick-prompt" onclick="sendQuickMessage('I\'m feeling anxious about my next seizure')">Seizure Anxiety</button>
+                <button class="quick-prompt" onclick="sendQuickMessage('How can I manage stress?')">Stress Management</button>
+                <button class="quick-prompt" onclick="sendQuickMessage('I need coping strategies')">Coping Strategies</button>
+                <button class="quick-prompt" onclick="sendQuickMessage('Tell me about seizure triggers')">Seizure Triggers</button>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Type your message here..." autocomplete="off">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+
+        <div class="disclaimer">
+            💡 This chatbot provides supportive guidance powered by AI. Always consult with your healthcare provider for medical advice.
+        </div>
     </div>
 
-    <div id="gameOver">
-        <h2 id="gameOverTitle">Game Over!</h2>
-        <p>Final Score: <span id="finalScore">0</span></p>
-        <p id="gameOverMessage"></p>
-        <button onclick="resetGame()" style="margin-top: 20px;">Play Again</button>
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeSettings()">&times;</span>
+            <h2>API Settings</h2>
+            <label for="apiToken">Hugging Face API Token:</label>
+            <input type="password" id="apiToken" placeholder="Your Hugging Face API token" value="">
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">
+                Get your free token at <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a>
+            </p>
+            <button onclick="saveSettings()">Save Settings</button>
+            <button onclick="closeSettings()" style="background: #999; margin-top: 5px;">Cancel</button>
+        </div>
     </div>
+
+    <button class="settings-btn" onclick="openSettings()" title="API Settings">⚙️</button>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const chatArea = document.getElementById('chatArea');
+        const userInput = document.getElementById('userInput');
+        const quickPrompts = document.getElementById('quickPrompts');
 
-        // Game variables
-        const ROWS = 8;
-        const COLS = 8;
-        const BUBBLE_RADIUS = 25;
-        const COLORS = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA'];
-        
-        let grid = [];
-        let selectedBubbles = [];
-        let score = 0;
-        let moves = 0;
-        let gameActive = true;
-        let animating = false;
+        let apiToken = localStorage.getItem('hf_api_token') || '';
 
-        class Bubble {
-            constructor(row, col, color) {
-                this.row = row;
-                this.col = col;
-                this.color = color;
-                this.x = col * 70 + 50;
-                this.y = row * 70 + 50;
-                this.radius = BUBBLE_RADIUS;
-                this.falling = false;
-                this.targetY = this.y;
-            }
-
-            draw() {
-                // Draw bubble
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-
-                // Draw highlight if selected
-                if (this.selected) {
-                    ctx.strokeStyle = '#fff';
-                    ctx.lineWidth = 4;
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.radius - 8, 0, Math.PI * 2);
-                    ctx.strokeStyle = '#ffd700';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                }
-
-                // Draw shine
-                ctx.beginPath();
-                ctx.arc(this.x - 8, this.y - 8, 5, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-                ctx.fill();
-            }
-
-            update() {
-                if (this.falling) {
-                    if (this.y < this.targetY) {
-                        this.y += 3;
-                        if (this.y >= this.targetY) {
-                            this.y = this.targetY;
-                            this.falling = false;
-                        }
-                    }
-                }
-            }
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+            document.getElementById('apiToken').value = apiToken;
         }
 
-        function initGame() {
-            grid = [];
-            selectedBubbles = [];
-            score = 0;
-            moves = 0;
-            gameActive = true;
-            animating = false;
-            document.getElementById('gameOver').style.display = 'none';
-            
-            // Create grid
-            for (let row = 0; row < ROWS; row++) {
-                grid[row] = [];
-                for (let col = 0; col < COLS; col++) {
-                    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-                    grid[row][col] = new Bubble(row, col, color);
-                }
-            }
-            
-            updateUI();
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
         }
 
-        function updateUI() {
-            document.getElementById('score').textContent = score;
-            document.getElementById('moves').textContent = moves;
-        }
-
-        function getClickedBubble(x, y) {
-            for (let row = 0; row < ROWS; row++) {
-                for (let col = 0; col < COLS; col++) {
-                    const bubble = grid[row][col];
-                    if (!bubble) continue;
-
-                    const dx = bubble.x - x;
-                    const dy = bubble.y - y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < bubble.radius) {
-                        return { row, col };
-                    }
-                }
-            }
-            return null;
-        }
-
-        function isAdjacent(pos1, pos2) {
-            const rowDiff = Math.abs(pos1.row - pos2.row);
-            const colDiff = Math.abs(pos1.col - pos2.col);
-            return (rowDiff + colDiff === 1);
-        }
-
-        function toggleBubbleSelection(row, col) {
-            if (!grid[row][col]) return;
-
-            const bubble = grid[row][col];
-            const existingIndex = selectedBubbles.findIndex(
-                b => b.row === row && b.col === col
-            );
-
-            if (existingIndex !== -1) {
-                // Deselect
-                selectedBubbles[existingIndex].selected = false;
-                selectedBubbles.splice(existingIndex, 1);
-            } else {
-                // Check if adjacent to last selected
-                if (selectedBubbles.length === 0 || 
-                    (isAdjacent({ row, col }, selectedBubbles[selectedBubbles.length - 1]) &&
-                     grid[row][col].color === selectedBubbles[0].color)) {
-                    bubble.selected = true;
-                    selectedBubbles.push(bubble);
-                }
-            }
-        }
-
-        function popSelectedBubbles() {
-            if (selectedBubbles.length < 2) {
-                selectedBubbles.forEach(b => b.selected = false);
-                selectedBubbles = [];
+        function saveSettings() {
+            const token = document.getElementById('apiToken').value.trim();
+            if (!token) {
+                alert('Please enter a valid API token');
                 return;
             }
+            apiToken = token;
+            localStorage.setItem('hf_api_token', token);
+            closeSettings();
+            alert('Settings saved! Your API token is stored locally.');
+        }
 
-            const pointsPerBubble = 10 + selectedBubbles.length * 5;
-            score += selectedBubbles.length * pointsPerBubble;
-            moves++;
+        window.onclick = function(event) {
+            const modal = document.getElementById('settingsModal');
+            if (event.target === modal) {
+                closeSettings();
+            }
+        }
 
-            selectedBubbles.forEach(bubble => {
-                grid[bubble.row][bubble.col] = null;
-            });
+        async function generateResponse(userMessage) {
+            if (!apiToken) {
+                return "Please set your Hugging Face API token first. Click the ⚙️ button in the top right.";
+            }
 
-            selectedBubbles = [];
-            updateUI();
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: userMessage,
+                        token: apiToken
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    return errorData.error || "Error connecting to AI. Please try again.";
+                }
+
+                const data = await response.json();
+                return data.response || "I'm having trouble generating a response. Please try again.";
+            } catch (error) {
+                console.error('Error:', error);
+                return "Connection error. Please check your internet and try again.";
+            }
+        }
+
+        function addMessage(text, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
             
-            // Apply gravity
-            setTimeout(applyGravity, 200);
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            
+            messageDiv.appendChild(bubble);
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
         }
 
-        function applyGravity() {
-            animating = true;
-            let bubblesFalling = false;
-
-            for (let col = 0; col < COLS; col++) {
-                for (let row = ROWS - 1; row >= 0; row--) {
-                    if (!grid[row][col]) {
-                        // Find next bubble above
-                        for (let aboveRow = row - 1; aboveRow >= 0; aboveRow--) {
-                            if (grid[aboveRow][col]) {
-                                const bubble = grid[aboveRow][col];
-                                grid[row][col] = bubble;
-                                grid[aboveRow][col] = null;
-                                
-                                bubble.row = row;
-                                bubble.falling = true;
-                                bubble.targetY = row * 70 + 50;
-                                bubblesFalling = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (bubblesFalling) {
-                setTimeout(applyGravity, 150);
-            } else {
-                animating = false;
-                checkGameOver();
-            }
+        function showTypingIndicator() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.id = 'typingIndicator';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+            
+            messageDiv.appendChild(bubble);
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
         }
 
-        function checkGameOver() {
-            let hasMove = false;
-
-            for (let row = 0; row < ROWS; row++) {
-                for (let col = 0; col < COLS; col++) {
-                    if (!grid[row][col]) continue;
-
-                    const color = grid[row][col].color;
-
-                    // Check right
-                    if (col + 1 < COLS && grid[row][col + 1] && grid[row][col + 1].color === color) {
-                        hasMove = true;
-                    }
-                    // Check down
-                    if (row + 1 < ROWS && grid[row + 1][col] && grid[row + 1][col].color === color) {
-                        hasMove = true;
-                    }
-                }
-            }
-
-            if (!hasMove) {
-                gameActive = false;
-                showGameOver();
-            }
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
         }
 
-        function showGameOver() {
-            document.getElementById('gameOverTitle').textContent = 'Game Over!';
-            document.getElementById('finalScore').textContent = score;
-            document.getElementById('gameOverMessage').textContent = `You cleared the board with ${moves} moves!`;
-            document.getElementById('gameOver').style.display = 'block';
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, true);
+            userInput.value = '';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            // Get AI response
+            const response = await generateResponse(message);
+            removeTypingIndicator();
+            addMessage(response, false);
         }
 
-        function resetGame() {
-            level = 1;
-            initGame();
+        function sendQuickMessage(message) {
+            userInput.value = message;
+            sendMessage();
+            quickPrompts.style.display = 'none';
         }
 
-        // Mouse events
-        canvas.addEventListener('click', (e) => {
-            if (!gameActive || animating) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            const clicked = getClickedBubble(x, y);
-            if (clicked) {
-                toggleBubbleSelection(clicked.row, clicked.col);
-            }
+        // Send message on Enter key
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
         });
 
-        // Keyboard event for Enter to pop
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && gameActive && !animating) {
-                popSelectedBubbles();
+        // Focus input on load
+        window.addEventListener('load', () => {
+            if (!apiToken) {
+                setTimeout(() => {
+                    alert('Welcome to EpiCare! Please set your Hugging Face API token to enable AI responses. Click the ⚙️ button.');
+                    openSettings();
+                }, 500);
             }
+            userInput.focus();
         });
-
-        // Game loop
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw bubbles
-            for (let row = 0; row < ROWS; row++) {
-                for (let col = 0; col < COLS; col++) {
-                    const bubble = grid[row][col];
-                    if (bubble) {
-                        bubble.update();
-                        bubble.draw();
-                    }
-                }
-            }
-
-            // Draw instruction
-            if (selectedBubbles.length > 0) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
-                ctx.fillStyle = 'white';
-                ctx.font = '16px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(
-                    `${selectedBubbles.length} bubbles selected - Press ENTER to pop or click another`,
-                    canvas.width / 2,
-                    canvas.height - 10
-                );
-            }
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Start game
-        initGame();
-        gameLoop();
     </script>
 </body>
 </html>
